@@ -25,9 +25,11 @@ def callback(event):
         global Selected
         global Cursor
         cell = field[item[0]][item[1]]
+        if Selected != None:
+            canvas.itemconfig(Selected.itemId, outline="")
         Selected = cell
         Cursor = (cell.i,cell.j)
-        canvas.itemconfig(rect, outline="blue")
+        canvas.itemconfig(rect, outline="black")
 
 def onOptionsMenuSelection(event):
     if Selected != None:
@@ -66,8 +68,9 @@ def main():
         field.append([])
         for cell in row:
             square = Cell(i,j)
+            square.celltype = TypeCell(int(cell) + 1)
             idRectangle = "rec:" + str(i) + "," + str(j)
-            rectangle = canvas.create_rectangle(i * size , j * size, (1 + i) * size , (1 + j)* size, fill= square.celltype, tag = idRectangle)
+            rectangle = canvas.create_rectangle(i * size, j * size , ((1 + i) * size) , ((1 + j) * size ) , fill= square.celltype, tag = idRectangle, outline = "")
             square.itemId = rectangle
             canvas.tag_bind(idRectangle, "<Button-1>", callback)
             ItemList[rectangle] = (i,j)
