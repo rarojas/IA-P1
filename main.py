@@ -24,7 +24,7 @@ def callback(event):
     if item != None:
         global Selected
         global Cursor
-        cell = field[item[0]][item[1]]
+        cell = field[item[1]][item[0]]
         if Selected != None:
             canvas.itemconfig(Selected.itemId, outline="")
         Selected = cell
@@ -55,6 +55,7 @@ def main():
     global canvas
     canvas = Canvas(master, width=600, height=600)
     canvas.pack()
+    print matrix
 
     variable = StringVar(master)
     optionsField = ["MOUNTAIN", "LAND", "WATER","SAND","FORREST"]
@@ -62,9 +63,9 @@ def main():
     options.pack()
     canvas.bind("<Key>", key)
 
-    i = 0
+    j = 0
     for row in matrix:
-        j = 0
+        i = 0
         field.append([])
         for cell in row:
             square = Cell(i,j)
@@ -74,9 +75,9 @@ def main():
             square.itemId = rectangle
             canvas.tag_bind(idRectangle, "<Button-1>", callback)
             ItemList[rectangle] = (i,j)
-            field[i].append(square)
-            j += 1
-        i += 1
+            field[j].append(square)
+            i += 1
+        j += 1
 
 
     master.mainloop()
