@@ -11,7 +11,11 @@ noColumns = 0
 Matrix = [[]]
 for line in content:
     row = line.replace("\n").split(',')
+    for cell in row:
+        no
+        noColumns++
     print row
+    noRows++
 
 w = Canvas(master, width=600, height=600)
 w.pack()
