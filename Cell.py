@@ -1,3 +1,11 @@
+from enum import Enum
+
+class Direction(Enum):
+    UP = 111
+    DOWN = 116
+    LEFT = 113
+    RIGHT = 114
+
 class TypeCell:
     MOUNTAIN,LAND, WATER, SAND,FORREST = range(5)
     def __init__(self, Type):
@@ -31,8 +39,6 @@ class TypeCell:
         if value == "FORREST":
             return TypeCell.FORREST
 
-
-
     def __eq__(self,y):
        return self.value==y.value
 
@@ -40,8 +46,8 @@ class TypeCell:
 class Cell(object):
     size = 50
     celltype = TypeCell( TypeCell.MOUNTAIN)
-    visited = None
-    visisible = False
+    visited = False
+    visible = False
     itemId = None
 
     def __init__(self, i,j):
