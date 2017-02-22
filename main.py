@@ -7,6 +7,8 @@ cursor = (0,0)
 ItemList = {}
 field = []
 canvas = None
+ListboxOptionsTypeField = None
+optionsField = ["MOUNTAIN", "LAND", "WATER","SAND","FORREST"]
 
 
 def key(event):
@@ -24,12 +26,14 @@ def callback(event):
     if item != None:
         global Selected
         global Cursor
+        global ListboxOptionsTypeField
         cell = field[item[1]][item[0]]
         if Selected != None:
             canvas.itemconfig(Selected.itemId, outline="")
         Selected = cell
         Cursor = (cell.i,cell.j)
         canvas.itemconfig(rect, outline="black")
+        ListboxOptionsTypeField.set(optionsField[cell.celltype.valueInt()])
 
 def onOptionsMenuSelection(event):
     if Selected != None:
@@ -53,15 +57,15 @@ def main():
         matrix.append(row)
         noRows+= 1
     global canvas
-    canvas = Canvas(master, width=600, height=600)
-    canvas.pack()
-    print matrix
-
-    variable = StringVar(master)
-    optionsField = ["MOUNTAIN", "LAND", "WATER","SAND","FORREST"]
-    options = OptionMenu(master, variable, *(optionsField),command = onOptionsMenuSelection)
-    options.pack()
-    canvas.bind("<Key>", key)
+    width = len(matrix[0]) * size
+    height = noRows * size
+    canvas = Canvas(master, width=width, height=height)
+    canvas.pack(anchor="ne",side="left")
+    global ListboxOptionsTypeField
+    ListboxOptionsTypeField = StringVar(master)
+    options = OptionMenu(master, ListboxOptionsTypeField, *(optionsField),command = onOptionsMenuSelection)
+    options.pack(fill="x",side="left", anchor="n",expand="1")
+    master.bind("<Key>", key)    
 
     j = 0
     for row in matrix:
@@ -78,7 +82,6 @@ def main():
             field[j].append(square)
             i += 1
         j += 1
-
 
     master.mainloop()
 

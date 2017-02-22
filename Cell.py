@@ -14,6 +14,10 @@ class TypeCell:
             return 'yellow'
         if self.value == TypeCell.FORREST:
             return 'green'
+
+    def valueInt(self):
+        return self.value
+
     @staticmethod
     def parse(value):
         if value == "MOUNTAIN":
