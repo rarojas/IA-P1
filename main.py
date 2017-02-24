@@ -1,4 +1,5 @@
 from Tkinter import *
+import tkFileDialog
 from sys import argv
 from Cell import *
 from Engine import *
@@ -11,15 +12,40 @@ class Game(Frame):
     ItemList = {}
     field = []
     canvas = None
-    ListboxOptionsTypeField = None
-    optionsField = ["MOUNTAIN", "LAND", "WATER","SAND","FORREST"]
-    size = 33
     noRows = 0
     noColumns = 0
+    ListboxOptionsTypeField = None
+
+    optionsField = ["MOUNTAIN", "LAND", "WATER","SAND","FORREST","WALL"]
+    size = 33
+    height = 300
+    width =300
+
+    def initialize(self):
+        self.Selected = None
+        self.cursor = (0,0)
+        self.position = (0,0)
+        self.ItemList = {}
+        self.field = []
+        self.canvas = None
+        self.noRows = 0
+        self.noColumns = 0
+        self.ListboxOptionsTypeField = None
+
 
 
     def saveMapToFile(self):
-        pass
+        data = []
+        for row in self.field:
+            rowData = ""
+            for cell in row:
+                rowData = rowData + "," + repr(cell.celltype.value)
+            rowData = rowData[1:]
+            data.append(rowData)
+        with tkFileDialog.asksaveasfile('w', defaultextension='.dat') as file:
+            file.write("\n".join(data))
+
+
 
     def onKeyPress(self, event):
         print 'even'
@@ -127,12 +153,12 @@ class Game(Frame):
 
 
     def main(self):
-        self.filename = argv[1]
         matrix = self.engine.readDataFromFile(self.filename)
         self.noRows = len(matrix)
         self.noColumns = len(matrix[0])
         self.width = (self.noColumns + 1) * self.size
         self.height = (self.noRows + 1  ) * self.size
+
         self.canvas = Canvas(self, width = self.width, height = self.height, bg="gray")
         self.canvas.pack(anchor=NE,side=LEFT)
         self.ListboxOptionsTypeField
@@ -146,7 +172,6 @@ class Game(Frame):
         self.master.bind("<Key>", self.onKeyPress)
         self.background_image = PhotoImage(file = os.path.join("assets","Floor.gif"))
         self.generateCoords()
-
 
         j = 0
         for row in matrix:
@@ -171,11 +196,38 @@ class Game(Frame):
 
         self.togleHighlightPosition(self.position)
 
+    def loadMap(self):
+        fname =  tkFileDialog.askopenfilename()
+        if fname:
+            self.filename = fname
+            for child in self.winfo_children():
+                child.destroy()
+            self.createMenubar()
+            self.initialize()
+            self.main()
+
+    def createMenubar(self):
+        self.menubar = Menu(self)
+        filemenu = Menu(self.menubar, tearoff=0)
+        filemenu.add_command(label="Open",command=self.loadMap)
+        filemenu.add_command(label="Save",command=self.saveMapToFile)
+        filemenu.add_separator()
+        filemenu.add_command(label="Exit",command=self.quit)
+        self.menubar.add_cascade(label="File", menu=filemenu)
+
+        try:
+            self.master.config(menu =self.menubar)
+        except AttributeError:
+            self.master.tk.call(master,"config", "-menu",self.menubar)
+
     def __init__(self, master=None):
         Frame.__init__(self, master)
         Pack.config(self)
         self.engine = Engine()
-        self.main()
+        self.createMenubar()
+        self.canvas = Canvas(self, width = self.width, height = self.height, bg="gray")
+        self.canvas.pack(anchor=NE,side=LEFT)
+        self.master.title("P1")
 
 game = Game()
 game.mainloop()
