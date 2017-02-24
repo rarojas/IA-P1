@@ -2,6 +2,7 @@ from Tkinter import *
 from sys import argv
 from Cell import *
 from Engine import *
+import os,sys
 
 class Game(Frame):
     Selected = None
@@ -12,9 +13,13 @@ class Game(Frame):
     canvas = None
     ListboxOptionsTypeField = None
     optionsField = ["MOUNTAIN", "LAND", "WATER","SAND","FORREST"]
-    size = 50
+    size = 33
     noRows = 0
     noColumns = 0
+
+
+    def saveMapToFile(self):
+        pass
 
     def onKeyPress(self, event):
         print 'even'
@@ -26,6 +31,9 @@ class Game(Frame):
             self.updatePosition(Direction.LEFT)
         if event.keycode == Direction.RIGHT.value:
             self.updatePosition(Direction.RIGHT)
+        if event.keysym == 'Escape':
+            self.destroy()
+            sys.exit()
 
     def callback(self,event):
         canvas = event.widget
@@ -40,7 +48,17 @@ class Game(Frame):
             self.Selected = cell
             self.Cursor = (cell.i,cell.j)
             self.canvas.itemconfig(rect, outline="black")
-            self.ListboxOptionsTypeField.set(self.optionsField[cell.celltype.valueInt()])
+            self.ListboxOptionsTypeField.set(self.optionsField[cell.celltype.value])
+            self.labelInfoCellPosition["text"] = "Position : " + chr(self.Cursor[0] + 66) + repr(self.Cursor[1])
+            self.updateInfo(cell)
+
+
+    def updateInfo(self,cell):
+        if cell.visited:
+            self.labelInfoCellVisited["text"] = "Visitado : Si"
+        else:
+            self.labelInfoCellVisited["text"] = "Visitado : No"
+
 
     def onOptionsMenuSelection(self, event):
         if self.Selected != None:
@@ -85,8 +103,10 @@ class Game(Frame):
 
     def togleHighlightPosition(self, newPosition):
         current = self.field[self.position[1]][self.position[0]]
+        current.visited = True
         self.canvas.itemconfig(current.itemId, outline="")
         new = self.field[newPosition[1]][newPosition[0]]
+        new.visited =  True
         self.canvas.itemconfig(new.itemId, outline="black")
         self.position = newPosition
         self.revealAroundCells()
@@ -103,6 +123,7 @@ class Game(Frame):
             cell = self.field[y][x]
             if not cell.visible:
                 self.canvas.itemconfig(cell.itemId,fill= cell.celltype)
+                cell.visible = True
 
 
     def main(self):
@@ -110,16 +131,22 @@ class Game(Frame):
         matrix = self.engine.readDataFromFile(self.filename)
         self.noRows = len(matrix)
         self.noColumns = len(matrix[0])
-        self.width = (self.noColumns + 1)* self.size
-        self.height = (self.noRows + 1 ) * self.size
+        self.width = (self.noColumns + 1) * self.size
+        self.height = (self.noRows + 1  ) * self.size
         self.canvas = Canvas(self, width = self.width, height = self.height, bg="gray")
-        self.canvas.pack(anchor="ne",side="left")
+        self.canvas.pack(anchor=NE,side=LEFT)
         self.ListboxOptionsTypeField
         self.ListboxOptionsTypeField = StringVar(self)
         self.options = OptionMenu(self, self.ListboxOptionsTypeField, *(self.optionsField),command = self.onOptionsMenuSelection)
-        self.options.pack(fill="x",side="left", anchor="n",expand="1")
+        self.labelInfoCellPosition = Label(self,text="")
+        self.options.pack(fill="x", padx = 5, pady = 5)
+        self.labelInfoCellPosition.pack(fill="x" ,padx = 5, pady = 5)
+        self.labelInfoCellVisited = Label(self,text="")
+        self.labelInfoCellVisited.pack(fill="x" ,padx = 5, pady = 5)
         self.master.bind("<Key>", self.onKeyPress)
+        self.background_image = PhotoImage(file = os.path.join("assets","Floor.gif"))
         self.generateCoords()
+
 
         j = 0
         for row in matrix:
@@ -127,7 +154,7 @@ class Game(Frame):
             self.field.append([])
             for cell in row:
                 square = Cell(i,j)
-                square.celltype = TypeCell(int(cell) + 1)
+                square.celltype = TypeCell(int(cell))
                 idRectangle = "rec:" + str(i) + "," + str(j)
                 x =  (i  + 1 ) * self.size
                 y =  (j  + 1 ) * self.size
@@ -135,6 +162,7 @@ class Game(Frame):
                 y1 =  y + self.size
                 rectangle = self.canvas.create_rectangle(x,y,x1,y1, fill="black", tag = idRectangle,outline="",width="2")
                 square.itemId = rectangle
+                #self.canvas.create_image(x,y, image = self.background_image,anchor = NW)
                 self.canvas.tag_bind(idRectangle, "<Button-1>", self.callback)
                 self.ItemList[rectangle] = (i,j)
                 self.field[j].append(square)

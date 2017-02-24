@@ -6,25 +6,22 @@ class Direction(Enum):
     LEFT = 113
     RIGHT = 114
 
-class TypeCell:
-    MOUNTAIN,LAND, WATER, SAND,FORREST = range(5)
-    def __init__(self, Type):
-        self.value = Type
+class TypeCell(Enum):
+    MOUNTAIN,LAND, WATER, SAND,FORREST,WALL = range(6)
 
     def __str__(self):
-        if self.value == TypeCell.MOUNTAIN:
+        if self is TypeCell.MOUNTAIN:
             return 'gray'
-        if self.value == TypeCell.LAND:
-            return 'brown'
-        if self.value == TypeCell.WATER:
+        if self is TypeCell.LAND:
+            return '#c47d01'
+        if self is TypeCell.WATER:
             return 'blue'
-        if self.value == TypeCell.SAND:
-            return 'yellow'
-        if self.value == TypeCell.FORREST:
+        if self is  TypeCell.SAND:
+            return 'brown'
+        if self is  TypeCell.FORREST:
             return 'green'
-
-    def valueInt(self):
-        return self.value
+        if self is  TypeCell.WALL:
+            return 'black'
 
     @staticmethod
     def parse(value):
@@ -38,9 +35,8 @@ class TypeCell:
             return TypeCell.SAND
         if value == "FORREST":
             return TypeCell.FORREST
-
-    def __eq__(self,y):
-       return self.value==y.value
+        if value == "WALL":
+            return TypeCell.WALL
 
 
 class Cell(object):
