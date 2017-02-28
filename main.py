@@ -4,6 +4,7 @@ from sys import argv
 from Cell import *
 from Engine import *
 import os,sys
+from Player import *
 
 class Game(Frame):
     Selected = None
@@ -15,8 +16,8 @@ class Game(Frame):
     noRows = 0
     noColumns = 0
     ListboxOptionsTypeField = None
-
-    optionsField = ["MOUNTAIN", "LAND", "WATER","SAND","FORREST","WALL"]
+    optionsField = [typeCell.name for typeCell in list(TypeCell)]
+    optionsPlayer = [typePlayer.name for typePlayer in list(TypePlayer)]
     size = 33
     height = 300
     width =300
@@ -48,7 +49,6 @@ class Game(Frame):
 
 
     def onKeyPress(self, event):
-        print 'even'
         if event.keycode == Direction.UP.value:
             self.updatePosition(Direction.UP)
         if event.keycode == Direction.DOWN.value:
