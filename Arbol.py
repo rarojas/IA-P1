@@ -1,23 +1,21 @@
-class nodo:
-    ramas, dato = [],None
+class Arbol:
 
-    def __init__(self, dato):
-        self.hijos  = []
-        self.dato = dato
+    hijos = []
+    deep = 0
+    cost = 0
+    g = 0
+    h = 0
+    parent = None
 
-class arbol:
-    def __init__(self, raiz):
-        self.raiz = raiz
+    def __init__(self, elemento,direction):
+        self.elemento = elemento
+        self.direction =  direction
 
-    def agregarNodo(self, elemento, padre):
-        subarbol = buscar(raiz, padre)
-        subarbol.hijos.append(nodo(elemento))
+    def agregarElemento(self, elemento ):
+        self.hijos.append(Arbol(elemento))
 
-    def buscar(self, arbol, elemento):
-        if arbol.dato == elemento.datoa:
-            return arbol
-        for subarbol in arbol.hijos:
-            arbolBuscado = buscar(subarbol, elemento)
-            if arbolBuscado != None:
-                return arbolBuscado
-            return None
+    def str(self):
+        return repr(self.elemento[1]) + ',' + repr(self.elemento[0])
+
+    def f(self):
+        return self.g + self.h

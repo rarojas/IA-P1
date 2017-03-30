@@ -1,13 +1,13 @@
 from enum import Enum
 
 class Direction(Enum):
-    UP = 111
-    DOWN = 116
-    LEFT = 113
-    RIGHT = 114
+    UP = 'Up'
+    DOWN = 'Down'
+    LEFT = 'Left'
+    RIGHT = 'Right'
 
 class TypeCell(Enum):
-    MOUNTAIN,LAND, WATER, SAND,FORREST,WALL = range(6)
+    MOUNTAIN,LAND, WATER, SAND,FORREST = range(5)
 
     def __str__(self):
         if self is TypeCell.MOUNTAIN:
@@ -41,10 +41,18 @@ class TypeCell(Enum):
 
 class Cell(object):
     size = 50
-    celltype = TypeCell( TypeCell.MOUNTAIN)
+    celltype = TypeCell(TypeCell.MOUNTAIN)
     visited = False
     visible = False
+    marked = False
     itemId = None
+    text_id = None
+    cost = 0
+    g = 0
+    h = 0
+
+    def f(self):
+        return self.g + self.h
 
     def __init__(self, i,j):
         self.i = i

@@ -49,13 +49,15 @@ class Game(Frame):
 
 
     def onKeyPress(self, event):
-        if event.keycode == Direction.UP.value:
+        if event.keysym == 'o':
+            self.markCell()
+        if event.keysym == Direction.UP.value:
             self.updatePosition(Direction.UP)
-        if event.keycode == Direction.DOWN.value:
+        if event.keysym == Direction.DOWN.value:
             self.updatePosition(Direction.DOWN)
-        if event.keycode == Direction.LEFT.value:
+        if event.keysym == Direction.LEFT.value:
             self.updatePosition(Direction.LEFT)
-        if event.keycode == Direction.RIGHT.value:
+        if event.keysym == Direction.RIGHT.value:
             self.updatePosition(Direction.RIGHT)
         if event.keysym == 'Escape':
             self.destroy()
@@ -78,18 +80,41 @@ class Game(Frame):
             self.labelInfoCellPosition["text"] = "Position : " + chr(self.Cursor[0] + 66) + repr(self.Cursor[1])
             self.updateInfo(cell)
 
+    def updateLabels(self):
+        cell = self.Selected
+        self.ListboxOptionsTypeField.set(self.optionsField[cell.celltype.value])
+        self.labelInfoCellPosition["text"] = "Position : " + chr(self.position[0] + 65) + repr(self.position[1])
+        self.updateInfo(cell)
+
+    def markCell(self):
+        self.Selected.marked = True
+        x = ((self.Selected.i + 1) * self.size) + (self.size / 2)
+        y = ((self.Selected.j + 1) * self.size) + (self.size / 2)
+        r = 5
+        self.canvas.create_oval(x - r, y - r,x + r,y + r, outline="black", fill="black", width=2)
+        self.updateInfo(self.Selected)
 
     def updateInfo(self,cell):
         if cell.visited:
             self.labelInfoCellVisited["text"] = "Visitado : Si"
         else:
             self.labelInfoCellVisited["text"] = "Visitado : No"
+        if cell.marked:
+            self.labelInfoCellMark["text"] = "Marcado : Si"
+        else:
+            self.labelInfoCellMark["text"] = "Marcado : No"
+
 
 
     def onOptionsMenuSelection(self, event):
         if self.Selected != None:
             self.Selected.celltype = TypeCell(TypeCell.parse(event))
             self.canvas.itemconfig(self.Selected.itemId, fill = self.Selected.celltype)
+
+    def onOptionsPlayerSelection(self,event):
+        self.player.typePlayer = Player.parse(event)
+        self.labelInfoPlayer["text"] = "Tipo " + self.player.typePlayer.name + " costo Total: " + repr(self.player.costTotal)
+
 
     def generateCoords(self):
         halfSize = self.size / 2
@@ -129,9 +154,21 @@ class Game(Frame):
 
     def togleHighlightPosition(self, newPosition):
         current = self.field[self.position[1]][self.position[0]]
-        current.visited = True
-        self.canvas.itemconfig(current.itemId, outline="")
         new = self.field[newPosition[1]][newPosition[0]]
+        cost = self.player.move(new.celltype)
+        self.labelInfoPlayer["text"] = "Tipo " + self.player.typePlayer.name + " costo Total: " + repr(self.player.costTotal)
+        if cost == 0:
+            self.updateLabels()
+            return
+        current.visited = True
+        self.Selected = new
+        self.updateLabels()
+        self.canvas.itemconfig(current.itemId, outline="")
+        x = ((newPosition[0] + 1) * self.size) + (self.size / 2)
+        y = ((newPosition[1] + 1) * self.size) + (self.size / 2)
+        r = 15
+        newCords = (x - r, y - r,x + r,y + r)
+        self.canvas.coords(self.markPlayer, newCords)
         new.visited =  True
         self.canvas.itemconfig(new.itemId, outline="black")
         self.position = newPosition
@@ -154,6 +191,7 @@ class Game(Frame):
 
     def main(self):
         matrix = self.engine.readDataFromFile(self.filename)
+        self.player = Player(TypePlayer.HUMAN)
         self.noRows = len(matrix)
         self.noColumns = len(matrix[0])
         self.width = (self.noColumns + 1) * self.size
@@ -161,17 +199,34 @@ class Game(Frame):
 
         self.canvas = Canvas(self, width = self.width, height = self.height, bg="gray")
         self.canvas.pack(anchor=NE,side=LEFT)
-        self.ListboxOptionsTypeField
+        
+
         self.ListboxOptionsTypeField = StringVar(self)
         self.options = OptionMenu(self, self.ListboxOptionsTypeField, *(self.optionsField),command = self.onOptionsMenuSelection)
+
+        self.ListboxOptionsTypePlayer = StringVar(self)
+        self.optionsTypePlayer = OptionMenu(self, self.ListboxOptionsTypePlayer, *(self.optionsPlayer),command = self.onOptionsPlayerSelection)
+        self.ListboxOptionsTypePlayer.set("HUMAN")
+
         self.labelInfoCellPosition = Label(self,text="")
         self.options.pack(fill="x", padx = 5, pady = 5)
+
         self.labelInfoCellPosition.pack(fill="x" ,padx = 5, pady = 5)
         self.labelInfoCellVisited = Label(self,text="")
         self.labelInfoCellVisited.pack(fill="x" ,padx = 5, pady = 5)
+
+        self.optionsTypePlayer.pack(fill="x", padx = 5, pady = 5)
+
+        self.labelInfoCellMark = Label(self,text="")
+        self.labelInfoCellMark.pack(fill="x" ,padx = 5, pady = 5)
+
+        self.labelInfoPlayer = Label(self,text="")
+        self.labelInfoPlayer.pack(fill="x" ,padx = 5, pady = 5)
+
         self.master.bind("<Key>", self.onKeyPress)
         self.background_image = PhotoImage(file = os.path.join("assets","Floor.gif"))
         self.generateCoords()
+
 
         j = 0
         for row in matrix:
@@ -187,14 +242,14 @@ class Game(Frame):
                 y1 =  y + self.size
                 rectangle = self.canvas.create_rectangle(x,y,x1,y1, fill="black", tag = idRectangle,outline="",width="2")
                 square.itemId = rectangle
-                #self.canvas.create_image(x,y, image = self.background_image,anchor = NW)
                 self.canvas.tag_bind(idRectangle, "<Button-1>", self.callback)
                 self.ItemList[rectangle] = (i,j)
                 self.field[j].append(square)
                 i += 1
             j += 1
-
+        self.markPlayer = self.canvas.create_oval( ((self.cursor[0] + 1) * self.size) + self.size / 4,((self.cursor[0] + 1) * self.size) + self.size / 4, self.size, self.size, outline="red", fill="red", width=2)
         self.togleHighlightPosition(self.position)
+
 
     def loadMap(self):
         fname =  tkFileDialog.askopenfilename()
@@ -228,6 +283,10 @@ class Game(Frame):
         self.canvas = Canvas(self, width = self.width, height = self.height, bg="gray")
         self.canvas.pack(anchor=NE,side=LEFT)
         self.master.title("P1")
+
+def _create_circle(self, x, y, r, **kwargs):
+    return self.create_oval(x-r, y-r, x+r, y+r, **kwargs)
+Canvas.create_circle = _create_circle
 
 game = Game()
 game.mainloop()
