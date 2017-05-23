@@ -28,7 +28,7 @@ class Game(Frame):
     Arbol = None
     Prioridad = [Direction.RIGHT, Direction.LEFT, Direction.UP, Direction.DOWN]
     startPoint = (0,0)
-    finalPoint = (5,2)
+    finalPoint = (12,12)
     vectors = {}
     goal = None
 
@@ -197,6 +197,13 @@ class Game(Frame):
         cost = self.player.costForCellType(new.celltype)
         return cost
 
+    def updateMark(self,newPosition, mark):
+        x = ((newPosition[0] + 1) * self.size) + (self.size / 2)
+        y = ((newPosition[1] + 1) * self.size) + (self.size / 2)
+        r = 15
+        newCords = (x - r, y - r,x + r,y + r)
+        self.canvas.coords(mark, newCords)
+
     def togleHighlightPosition(self, newPosition):
         current = self.field[self.position[1]][self.position[0]]
         self.labelInfoPlayer["text"] = "Tipo " + self.player.typePlayer.name + " costo Total: " + repr(self.player.costTotal)
@@ -205,14 +212,10 @@ class Game(Frame):
         self.Selected = new
         self.updateLabels()
         self.canvas.itemconfig(current.itemId, outline="")
-        x = ((newPosition[0] + 1) * self.size) + (self.size / 2)
-        y = ((newPosition[1] + 1) * self.size) + (self.size / 2)
-        r = 15
-        newCords = (x - r, y - r,x + r,y + r)
-        self.canvas.coords(self.markPlayer, newCords)
+        self.position = newPosition
+        self.updateMark(newPosition,self.markPlayer)
         new.visited =  True
         self.canvas.itemconfig(new.itemId, outline="black")
-        self.position = newPosition
         self.revealAroundCells()
 
     def revealAroundCells(self):
@@ -272,8 +275,10 @@ class Game(Frame):
         if self.canMove(nodo.elemento):
             self.togleHighlightPosition(nodo.elemento)
         if nodo.elemento == self.finalPoint:
-            self.A.layout()
+            self.goal = nodo
+            self.A.layout() # layout with default (neato)
             self.A.draw('simple.png')
+            self.getPath()
             return nodo
         self.vectors[nodo.str()] = True
         childrens = self.getMoves(nodo.elemento)
@@ -282,7 +287,7 @@ class Game(Frame):
         if len(nodo.hijos) == 0:
             return None
         for children in nodo.hijos:
-            children.father = nodo
+            children.parent = nodo
             self.A.add_edge(nodo.str(), children.str(), label = children.direction.name)
             result = self.visitar(children)
             if result is None:
@@ -317,11 +322,11 @@ class Game(Frame):
             self.currentNode = nodo
 
             for children in nodo.hijos:
-                children.father = nodo
+                children.parent = nodo
                 self.A.add_edge(nodo.str(), children.str(), label = children.direction.name)
                 if children.elemento == self.finalPoint:
-                    self.A.layout() # layout with default (neato)
-                    self.A.draw('simple.png') # draw png
+                    self.goal = children
+                    self.getPath()
                     return nodo
                 childrens.append(children)
         self.search(childrens)
@@ -330,12 +335,16 @@ class Game(Frame):
     def iterativeDeepSearch(self):
         self.remainStep = 0
         self.stepBySteps = False
+        values = self.endPoint.get().split(",")
+        self.finalPoint = (int(values[0]),int(values[1]))
         prioridad = self.listPrioridad.get(0, END)
+
         self.Prioridad = []
         for name in prioridad:
             self.Prioridad.append(Direction(name))
-        self.deep = 100
-        self.increment = 1
+
+        self.deep = int(self.deepSpin.get())
+        self.increment = int(self.incrementSpin.get())
         self.openNodes = { self.arbol.str() : self.arbol }
         t = threading.Thread(target=self.IDDFS, args=())
         self.A = pgv.AGraph()
@@ -345,7 +354,7 @@ class Game(Frame):
 
     def IDDFS(self):
         deep_next = self.deep
-        while self.deep < 1000:
+        while self.deep < 2000:
             if len(self.openNodes) == 0:
                 return False
             for key, nodo in self.openNodes.copy().iteritems():
@@ -364,8 +373,8 @@ class Game(Frame):
             return False
 
         if nodo.elemento == self.finalPoint:
-            self.A.layout() # layout with default (neato)
-            self.A.draw('simple.png') # draw png
+            self.goal = nodo
+            self.getPath()
             return True
 
         key = nodo.str()
@@ -375,7 +384,7 @@ class Game(Frame):
         nodo.hijos = childrens
 
         for children in nodo.hijos:
-            children.father = nodo
+            children.parent = nodo
             childrenKey = children.str()
             self.openNodes[childrenKey] = children
             self.A.add_edge(key, childrenKey, label = children.direction.name)
@@ -430,14 +439,57 @@ class Game(Frame):
                 time.sleep(.1)
                 parents.append(element.parent)
                 element = element.parent
-            self.A = pgv.AGraph()
 
+            time.sleep(.2)
+            self.togleHighlightPosition(element.elemento)
+            parents.append(element)
+            self.A = pgv.AGraph()
+            time.sleep(1)
+
+            self.A = pgv.AGraph()
             for children in parents:
                 if not children.parent is None:
                     self.A.add_edge(children.str(), children.parent.str(), label = children.direction.name)
 
             self.A.layout() # layout with default (neato)
             self.A.draw('simple.png') # draw png
+
+    def getPath(self):
+        if not self.goal is None:
+            element = self.goal
+            parents = []
+            while not element.parent is None:
+                self.togleHighlightPosition(element.elemento)
+                self.markCell()
+                time.sleep(.1)
+                parents.append(element.parent)
+                element = element.parent
+
+            time.sleep(.2)
+            self.togleHighlightPosition(element.elemento)
+            parents.append(element)
+            #self.A = pgv.AGraph()
+            time.sleep(1)
+
+            #self.A = pgv.AGraph()
+            #for children in parents:
+            #    if not children.parent is None:
+            #        self.A.add_edge(children.str(), children.parent.str(), label = children.direction.name)
+
+            #self.A.layout() # layout with default (neato)
+            #self.A.draw('simple.png') # draw png
+
+
+    def setPositions(self):
+        valuesInitialPoint = self.initialPoint.get().split(",")
+        self.startPoint = (int(valuesInitialPoint[0]),int(valuesInitialPoint[1]))
+        valuesEndPoint = self.endPoint.get().split(",")
+        self.finalPoint = (int(valuesEndPoint[0]),int(valuesEndPoint[1]))
+        self.updateMark(self.finalPoint,self.markFinal)
+
+        self.arbol = Arbol(self.startPoint, 0)
+        self.position = self.startPoint
+        self.togleHighlightPosition(self.position)
 
     def main(self):
         matrix = self.engine.readDataFromFile(self.filename)
@@ -461,18 +513,18 @@ class Game(Frame):
         self.labelInfoCellPosition = Label(self,text="")
         self.options.pack(fill="x", padx = 5, pady = 5)
 
-        self.labelInfoCellPosition.pack(fill="x" ,padx = 5, pady = 5)
+        self.labelInfoCellPosition.pack(fill="x" ,padx = 5, pady = 2)
         self.labelInfoCellVisited = Label(self,text="")
-        self.labelInfoCellVisited.pack(fill="x" ,padx = 5, pady = 5)
+        self.labelInfoCellVisited.pack(fill="x" ,padx = 5, pady = 2)
 
-        self.optionsTypePlayer.pack(fill="x", padx = 5, pady = 5)
+        self.optionsTypePlayer.pack(fill="x", padx = 5, pady = 2)
 
 
         self.labelInfoCellMark = Label(self,text="")
-        self.labelInfoCellMark.pack(fill="x" ,padx = 5, pady = 5)
+        self.labelInfoCellMark.pack(fill="x" ,padx = 5, pady = 2)
 
         self.labelInfoPlayer = Label(self,text="")
-        self.labelInfoPlayer.pack(fill="x" ,padx = 5, pady = 5)
+        self.labelInfoPlayer.pack(fill="x" ,padx = 5, pady = 2)
 
         self.listPrioridad = DragDropListbox(self, width = 15)
         self.listPrioridad.pack()
@@ -480,8 +532,10 @@ class Game(Frame):
             self.listPrioridad.insert(END, direction.value)
 
 
+        updateBtn = Button(self,text="Update position", command=self.setPositions)
+        updateBtn.pack()
 
-        b = Button(self,text="start", command=self.start)
+        b = Button(self,text="start first depth search", command=self.start)
         b.pack()
 
         bSteps = Button(self, text="steps", command=self.stepByStep)
@@ -490,7 +544,7 @@ class Game(Frame):
         bNext = Button(self, text="next", command=self.forward)
         bNext.pack()
 
-        btnSearhcAnchor = Button(self,text="start anchor", command=self.startSearchAnchor)
+        btnSearhcAnchor = Button(self,text="start first breadth", command=self.startSearchAnchor)
         btnSearhcAnchor.pack()
 
         btnIDDFS = Button(self,text="start IDDFS", command=self.iterativeDeepSearch)
@@ -499,11 +553,16 @@ class Game(Frame):
         btnAstart = Button(self,text="start A*", command=self.searchA_star)
         btnAstart.pack()
 
+
+        labelStart = Label(self,text="Start point")
+        labelStart.pack(fill="x" ,padx = 5, pady = 2)
         self.initialPoint = StringVar()
         e = Entry(self, textvariable=self.initialPoint)
         e.pack()
         self.initialPoint.set("0,0")
 
+        labelEnd = Label(self,text="Final point")
+        labelEnd.pack(fill="x" ,padx = 5, pady = 2)
         self.endPoint = StringVar()
         eFinal = Entry(self, textvariable=self.endPoint)
         eFinal.pack()
@@ -513,8 +572,14 @@ class Game(Frame):
         self.master.bind("<Key>", self.onKeyPress)
         self.generateCoords()
 
+        labelDepth = Label(self,text="Inital depth")
+        labelDepth.pack(fill="x" ,padx = 5, pady = 2)
+
         self.deepSpin = Spinbox(self, from_ = 1 ,to= 100000)
         self.deepSpin.pack()
+
+        labelIncrement = Label(self,text="Increment depth")
+        labelIncrement.pack(fill="x" ,padx = 5, pady = 2)
 
         self.incrementSpin = Spinbox(self, from_ = 0,to= 100000)
         self.incrementSpin.pack()
@@ -540,8 +605,15 @@ class Game(Frame):
                 self.field[j].append(square)
                 i += 1
             j += 1
-        self.markPlayer = self.canvas.create_oval( ((self.cursor[0] + 1) * self.size) + self.size / 4,((self.cursor[0] + 1) * self.size) + self.size / 4, self.size, self.size, outline="red", fill="red", width=2)
+
+
+
+        self.markPlayer = self.canvas.create_oval( ((self.position[0] + 1) * self.size) + self.size / 4,((self.position[1] + 1) * self.size) + self.size / 4, self.size, self.size, outline="red", fill="red", width=2)
         self.togleHighlightPosition(self.position)
+        x = ((self.finalPoint[0] + 1) * self.size) + (self.size / 2)
+        y = ((self.finalPoint[1] + 1) * self.size) + (self.size / 2)
+        r = 15
+        self.markFinal = self.canvas.create_oval( x - r,  y - r ,x + r , y + r, outline="blue", fill="blue", width=2)
 
 
 
